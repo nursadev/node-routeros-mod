@@ -1,0 +1,242 @@
+# node-routeros-mod
+
+Custom fork of **node-routeros** with full RouterOS v7 compatibility and modern TypeScript support.
+
+This project maintains the original low-level RouterOS Binary API design while fixing compatibility issues introduced in RouterOS v7 and updating the codebase for modern Node.js environments.
+
+---
+
+![RouterOS v7](https://img.shields.io/badge/RouterOS-v7-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## 📌 Based On
+
+Original project:
+
+**node-routeros**  
+Author: Aluísio Rodrigues Amaral  
+Repository: https://github.com/aluisiora/node-routeros
+
+This fork preserves the original MIT License and full author credit.
+
+---
+
+## 🚀 Why This Fork Exists
+
+The original project is no longer actively maintained.
+
+RouterOS v7 introduced changes (such as the `!empty` reply type) that caused `UNKNOWNREPLY` errors in the original library.
+
+This fork was created to:
+
+-   Add full RouterOS v7 compatibility
+-   Properly handle `!empty` replies
+-   Upgrade TypeScript to modern standards
+-   Replace deprecated `Timer` types with `NodeJS.Timeout`
+-   Provide a structured `CommandBuilder`
+-   Offer a stable base for ISP backend automation systems
+
+---
+
+## ✅ What Was Modified
+
+-   Added support for `!empty` reply (ROS7 fix)
+-   Updated TypeScript to v5+
+-   Replaced deprecated Timer typing
+-   Added `CommandBuilder` utility class
+-   Cleaned and modernized dependencies
+-   Internal improvements for production environments
+
+---
+
+## ✨ Features
+
+-   Promise-based API
+-   Reconnection support
+-   Keep-alive support
+-   Streaming support (`/tool/torch`, etc.)
+-   Full RouterOS Binary API support
+-   RouterOS v6 & v7 compatible
+-   Structured CommandBuilder
+-   Production-ready for backend automation
+
+---
+
+## 📦 Installation
+
+### Install directly from GitHub
+
+```bash
+npm install git+https://github.com/nursadev/node-routeros-mod.git
+```
+
+Then import:
+
+```typescript
+import { RouterOSAPI, CommandBuilder } from 'node-routeros-mod';
+```
+
+> Note: Since this is installed from GitHub, the `dist/` folder is included in the repository.
+
+---
+
+# 🔹 Basic Usage
+
+```typescript
+import { RouterOSAPI } from 'node-routeros-mod';
+
+const router = new RouterOSAPI({
+    host: '192.168.88.1',
+    user: 'admin',
+    password: 'yourpassword',
+});
+
+await router.connect();
+
+const result = await router.write('/system/identity/print');
+
+console.log(result);
+
+router.close();
+```
+
+---
+
+# 🔹 Using CommandBuilder (Recommended)
+
+Instead of manually writing raw word arrays, use `CommandBuilder`.
+
+---
+
+## Example: Check PPP User Exists
+
+```typescript
+import { RouterOSAPI, CommandBuilder } from 'node-routeros-mod';
+
+const router = new RouterOSAPI({
+    host: '192.168.88.1',
+    user: 'admin',
+    password: 'password',
+});
+
+await router.connect();
+
+const cmd = new CommandBuilder('/ppp/secret/print')
+    .where('name', 'testuser')
+    .select('.id');
+
+const result = await router.write(cmd.build());
+
+if (result.length > 0) {
+    console.log('User exists');
+} else {
+    console.log('User not found');
+}
+
+router.close();
+```
+
+---
+
+## Example: Add PPP User
+
+```typescript
+const cmd = new CommandBuilder('/ppp/secret/add')
+    .param('name', 'testuser')
+    .param('password', '123456')
+    .param('service', 'pppoe')
+    .param('profile', 'default');
+
+await router.write(cmd.build());
+```
+
+---
+
+## Example: Update Firewall Mangle Rule
+
+```typescript
+const cmd = new CommandBuilder('/ip/firewall/mangle/set')
+    .id('*5')
+    .param('in-interface', 'ether2');
+
+await router.write(cmd.build());
+```
+
+---
+
+## Example: Streaming (Torch)
+
+```typescript
+const stream = router.stream(
+    ['/tool/torch', '=interface=ether1'],
+    (error, packet) => {
+        if (!error) {
+            console.log(packet);
+        }
+    },
+);
+
+// Stop after 10 seconds
+setTimeout(async () => {
+    await stream.stop();
+    router.close();
+}, 10000);
+```
+
+---
+
+# 🧠 RouterOS v7 Compatibility
+
+This fork correctly handles:
+
+```
+!empty
+!done
+```
+
+Previously this caused `UNKNOWNREPLY` errors.
+
+Now empty queries return:
+
+```javascript
+[];
+```
+
+instead of throwing exceptions.
+
+---
+
+# 🛠 Development
+
+Build:
+
+```bash
+npm run build
+```
+
+Watch mode:
+
+```bash
+npm run build:watch
+```
+
+---
+
+# 📄 License
+
+MIT License
+
+Original work:
+
+Copyright (c) 2017 Aluísio Rodrigues Amaral
+
+Modifications:
+
+Copyright (c) 2026 Nursadev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction under the terms of the MIT License.

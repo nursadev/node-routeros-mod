@@ -1,0 +1,121 @@
+/**
+ * CommandBuilder untuk RouterOS Binary API (ROS6 & ROS7)
+ *
+ * Digunakan untuk membangun command dalam format Word-based protocol
+ * yang digunakan oleh MikroTik RouterOS Binary API (port 8728 / 8729).
+ *
+ * RouterOS Binary API TIDAK menggunakan string CLI seperti:
+ *   "/ppp/secret/print where name=xxx"
+ *
+ * Tetapi menggunakan format word array seperti:
+ *   [
+ *     "/ppp/secret/print",
+ *     "?=name=xxx",
+ *     "=.proplist=.id"
+ *   ]
+ *
+ * Prefix yang digunakan:
+ *
+ * =key=value     → Attribute (digunakan saat add / set)
+ * =.id=*XX       → Target ID untuk update
+ * ?=key=value    → Equality filter (where key == value)
+ * ?key~value     → Regex filter (like / contains)
+ * =.proplist=... → Select field tertentu (mirip SELECT di SQL)
+ *
+ * Contoh penggunaan:
+ *
+ * new CommandBuilder('/ppp/secret/print')
+ *   .where('name', 'user1')
+ *   .select('.id')
+ *   .build();
+ *
+ * Output:
+ * [
+ *   '/ppp/secret/print',
+ *   '?=name=user1',
+ *   '=.proplist=.id'
+ * ]
+ *
+ * Class ini bersifat chainable.
+ */
+export class CommandBuilder {
+    private command: string;
+    private words: string[] = [];
+
+    /**
+     * @param command Path menu RouterOS
+     * Contoh:
+     *  '/ppp/secret/print'
+     *  '/ip/firewall/mangle/add'
+     */
+    constructor(command: string) {
+        this.command = command;
+    }
+
+    /**
+     * Menambahkan attribute parameter.
+     * Digunakan untuk perintah add / set.
+     *
+     * Contoh:
+     *  =name=username
+     *  =password=123456
+     */
+    param(key: string, value: string | number | boolean) {
+        this.words.push(`=${key}=${value}`);
+        return this;
+    }
+
+    /**
+     * Menambahkan ID target.
+     * Digunakan saat melakukan update berdasarkan .id
+     *
+     * Contoh:
+     *  =.id=*1A
+     */
+    id(id: string) {
+        this.words.push(`=.id=${id}`);
+        return this;
+    }
+
+    /**
+     * Equality filter (where key == value)
+     *
+     * Contoh:
+     *  ?=name=user1
+     */
+    where(key: string, value: string | number | boolean) {
+        this.words.push(`?=${key}=${value}`);
+        return this;
+    }
+
+    /**
+     * Regex filter (like / contains)
+     *
+     * Contoh:
+     *  ?name~user
+     */
+    whereLike(key: string, value: string) {
+        this.words.push(`?${key}~${value}`);
+        return this;
+    }
+
+    /**
+     * Memilih field tertentu (.proplist)
+     * Mirip SELECT kolom tertentu di SQL
+     *
+     * Contoh:
+     *  =.proplist=.id,name
+     */
+    select(...fields: string[]) {
+        this.words.push(`=.proplist=${fields.join(',')}`);
+        return this;
+    }
+
+    /**
+     * Menghasilkan array command final
+     * yang siap dikirim ke RouterOS Binary API
+     */
+    build(): string[] {
+        return [this.command, ...this.words];
+    }
+}
