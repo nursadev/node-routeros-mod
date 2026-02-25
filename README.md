@@ -67,10 +67,10 @@ This fork was created to:
 
 ## 📦 Installation
 
-### Install directly from GitHub
+Install directly from GitHub:
 
 ```bash
-npm install git+https://github.com/nursadev/node-routeros-mod.git
+npm install nursadev/node-routeros-mod
 ```
 
 Then import:
@@ -240,3 +240,4 @@ Copyright (c) 2026 Nursadev
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction under the terms of the MIT License.
+
